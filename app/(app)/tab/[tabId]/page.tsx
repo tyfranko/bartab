@@ -77,7 +77,7 @@ export default async function TabPage({ params }: { params: { tabId: string } })
           <div className="ml-4 flex-1">
             <h1 className="text-2xl font-bold">Active Tab</h1>
             <p className="text-sm text-gray-600">
-              {tab.venue.name} - Table {tab.table.tableNumber}
+              {tab.venue.name}{tab.table ? ` - Table ${tab.table.tableNumber}` : ''}
             </p>
           </div>
         </div>
