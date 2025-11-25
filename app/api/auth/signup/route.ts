@@ -6,14 +6,41 @@ import { z } from 'zod'
 const signupSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
+  confirmPassword: z.string().min(8),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
+  phone: z.string().min(10),
+  dateOfBirth: z.string(),
 })
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { email, password, firstName, lastName } = signupSchema.parse(body)
+    const { email, password, confirmPassword, firstName, lastName, phone, dateOfBirth } = signupSchema.parse(body)
+
+    // Validate passwords match
+    if (password !== confirmPassword) {
+      return NextResponse.json(
+        { error: 'Passwords do not match' },
+        { status: 400 }
+      )
+    }
+
+    // Validate age (must be 21+)
+    const birthDate = new Date(dateOfBirth)
+    const today = new Date()
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const monthDiff = today.getMonth() - birthDate.getMonth()
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--
+    }
+
+    if (age < 21) {
+      return NextResponse.json(
+        { error: 'You must be at least 21 years old to use BarTab' },
+        { status: 400 }
+      )
+    }
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -37,6 +64,9 @@ export async function POST(request: Request) {
         passwordHash,
         firstName,
         lastName,
+        phone,
+        phoneVerified: false,
+        dateOfBirth: new Date(dateOfBirth),
       },
     })
 
@@ -48,6 +78,7 @@ export async function POST(request: Request) {
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
+          phone: user.phone,
         },
       },
       { status: 201 }
