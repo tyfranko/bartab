@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { AppProviders } from '@/components/app-providers'
 
 export default async function AppLayout({
   children,
@@ -14,9 +15,11 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {children}
-    </div>
+    <AppProviders>
+      <div className="min-h-screen bg-gray-50">
+        {children}
+      </div>
+    </AppProviders>
   )
 }
 

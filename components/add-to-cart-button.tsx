@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
 import { Plus, Minus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useCart } from '@/contexts/cart-context'
 
 interface MenuItem {
   id: string
@@ -15,15 +15,19 @@ interface AddToCartButtonProps {
 }
 
 export function AddToCartButton({ item }: AddToCartButtonProps) {
-  const [quantity, setQuantity] = useState(0)
+  const { items, addItem, updateQuantity } = useCart()
+  
+  const cartItem = items.find(i => i.id === item.id)
+  const quantity = cartItem?.quantity || 0
 
   const handleAdd = () => {
-    setQuantity(q => q + 1)
-    // In a real app, this would update a tab context/state
+    addItem(item)
   }
 
   const handleRemove = () => {
-    setQuantity(q => Math.max(0, q - 1))
+    if (quantity > 0) {
+      updateQuantity(item.id, quantity - 1)
+    }
   }
 
   if (quantity === 0) {
@@ -46,4 +50,3 @@ export function AddToCartButton({ item }: AddToCartButtonProps) {
     </div>
   )
 }
-

@@ -142,33 +142,11 @@ export default function CloseTabPage({ params }: { params: { tabId: string } }) 
             <p className="text-sm text-gray-600">
               Opened at {formatTime(new Date(tab.openedAt))}
             </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {allItems.length} item{allItems.length !== 1 ? 's' : ''} ordered
+            </p>
           </CardContent>
         </Card>
-
-        {/* All Items Ordered */}
-        <div className="mb-6">
-          <h2 className="mb-3 text-lg font-semibold">Items Ordered</h2>
-          <div className="space-y-2">
-            {allItems.map((item) => (
-              <Card key={item.id}>
-                <CardContent className="p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{item.quantity}x</span>
-                        <span>{item.menuItem.name}</span>
-                      </div>
-                      <span className="text-xs text-gray-500">
-                        {formatTime(new Date(item.orderedAt))}
-                      </span>
-                    </div>
-                    <span className="font-semibold">{formatCurrency(item.price * item.quantity)}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
 
         {/* Bill Summary */}
         <Card className="mb-6">
