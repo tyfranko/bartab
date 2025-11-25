@@ -16,12 +16,15 @@ async function getUserData(email: string) {
       lastName: true,
       tabs: {
         where: {
-          status: 'CLOSED',
+          OR: [
+            { status: 'OPEN' },
+            { status: 'CLOSED' },
+          ],
         },
         orderBy: {
-          closedAt: 'desc',
+          openedAt: 'desc',
         },
-        take: 5,
+        take: 10,
         include: {
           venue: true,
         },
@@ -53,6 +56,10 @@ export default async function HomePage() {
   const user = session?.user?.email ? await getUserData(session.user.email) : null
   const venues = await getNearbyVenues()
 
+  // Get active (open) tabs
+  const activeTabs = user?.tabs.filter(tab => tab.status === 'OPEN') || []
+  const recentTabs = user?.tabs.filter(tab => tab.status === 'CLOSED').slice(0, 5) || []
+
   return (
     <div className="container mx-auto max-w-md px-4 py-6">
       {/* Header */}
@@ -68,21 +75,50 @@ export default async function HomePage() {
         </Link>
       </div>
 
-      {/* Quick Action - Scan QR Code */}
-      <Card className="mb-6 bg-black text-white">
-        <CardContent className="flex items-center justify-between p-6">
-          <div>
-            <h2 className="text-lg font-semibold">Scan QR Code</h2>
-            <p className="text-sm text-gray-300">Start your tab at a table</p>
-          </div>
-          <Link href="/scan">
-            <Button size="lg" variant="secondary">
-              <QrCode className="mr-2 h-5 w-5" />
-              Scan
-            </Button>
-          </Link>
-        </CardContent>
-      </Card>
+      {/* Active Tab Alert */}
+      {activeTabs.length > 0 && (
+        <Card className="mb-6 border-2 border-green-500 bg-green-50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold text-green-900">Active Tab Open</h2>
+                <p className="text-sm text-green-700">{activeTabs[0].venue.name}</p>
+                <p className="text-xs text-green-600">Running Total: {formatCurrency(activeTabs[0].total)}</p>
+              </div>
+              <Link href={`/tab/${activeTabs[0].id}/close`}>
+                <Button variant="default" className="bg-green-600 hover:bg-green-700">
+                  Close Tab
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Quick Actions - Bar or Table */}
+      {activeTabs.length === 0 && (
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <h2 className="mb-3 text-center text-sm font-semibold text-gray-600">Where are you?</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <Link href="/bar-qr">
+                <Button size="lg" className="h-24 w-full flex-col gap-2 bg-black hover:bg-gray-800">
+                  <QrCode className="h-8 w-8" />
+                  <span>I&apos;m at The Bar</span>
+                </Button>
+              </Link>
+              <Link href="/venues">
+                <Button size="lg" className="h-24 w-full flex-col gap-2 bg-black hover:bg-gray-800">
+                  <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span>I&apos;m at a Table</span>
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Nearby Venues */}
       <div className="mb-6">
@@ -122,11 +158,11 @@ export default async function HomePage() {
       </div>
 
       {/* Recent Activity */}
-      {user?.tabs && user.tabs.length > 0 && (
+      {recentTabs.length > 0 && (
         <div>
           <h2 className="mb-3 text-lg font-semibold">Recent Activity</h2>
           <div className="space-y-3">
-            {user.tabs.map((tab) => (
+            {recentTabs.map((tab) => (
               <Card key={tab.id}>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
