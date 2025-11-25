@@ -90,7 +90,8 @@ export default function PaymentPage({ params }: { params: { tabId: string } }) {
 
       // Redirect to success page with details
       const venueName = encodeURIComponent(tab?.venue.name || 'Unknown Venue')
-      router.push(`/tab/${params.tabId}/success?total=${total}&venue=${venueName}`)
+      const venueId = tab?.venue.id || ''
+      router.push(`/tab/${params.tabId}/success?total=${total}&venue=${venueName}&tabId=${params.tabId}&venueId=${venueId}`)
     } catch (error) {
       console.error('Payment error:', error)
       toast({

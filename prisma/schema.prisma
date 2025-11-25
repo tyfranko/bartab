@@ -278,16 +278,21 @@ model Notification {
 }
 
 model Rating {
-  id        String   @id @default(cuid())
-  userId    String
-  venueId   String
-  tabId     String?
-  rating    Int
-  review    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id])
-  venue     Venue    @relation(fields: [venueId], references: [id])
+  id              String   @id @default(cuid())
+  userId          String
+  venueId         String
+  tabId           String?
+  overallRating   Int      // 1-5 stars
+  drinksRating    Int?     // 1-5 stars
+  vibeRating      Int?     // 1-5 stars
+  serviceSpeed    String?  // "Fast", "Moderate", "Slow"
+  crowdLevel      String?  // "Busy", "Moderate", "Empty"
+  serverName      String?  // Name or "Unknown"
+  review          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id])
+  venue           Venue    @relation(fields: [venueId], references: [id])
 
   @@map("ratings")
 }
