@@ -28,6 +28,7 @@ export default function PaymentSuccessPage() {
   const [overallRating, setOverallRating] = useState(0)
   const [drinksRating, setDrinksRating] = useState(0)
   const [vibeRating, setVibeRating] = useState(0)
+  const [serverRating, setServerRating] = useState(0)
   const [serviceSpeed, setServiceSpeed] = useState('')
   const [crowdLevel, setCrowdLevel] = useState('')
   const [serverName, setServerName] = useState('')
@@ -55,6 +56,7 @@ export default function PaymentSuccessPage() {
           overallRating,
           drinksRating: drinksRating || null,
           vibeRating: vibeRating || null,
+          serverRating: serverRating || null,
           serviceSpeed: serviceSpeed || null,
           crowdLevel: crowdLevel || null,
           serverName: serverName || null,
@@ -139,25 +141,35 @@ export default function PaymentSuccessPage() {
               </CardContent>
             </Card>
 
-            {/* Server Name */}
+            {/* Server Name & Rating */}
             <Card>
               <CardHeader>
                 <CardTitle>Who was your server tonight?</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <Input
-                    placeholder="Enter name"
-                    value={serverName}
-                    onChange={(e) => setServerName(e.target.value)}
-                  />
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => setServerName('Unknown')}
-                  >
-                    Unknown
-                  </Button>
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    <Input
+                      placeholder="Enter name"
+                      value={serverName}
+                      onChange={(e) => setServerName(e.target.value)}
+                    />
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setServerName('Unknown')}
+                    >
+                      Unknown
+                    </Button>
+                  </div>
+                  
+                  <div className="pt-4 border-t">
+                    <StarRating
+                      value={serverRating}
+                      onChange={setServerRating}
+                      label="Rate your server"
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>

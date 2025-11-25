@@ -285,6 +285,7 @@ model Rating {
   overallRating   Int      // 1-5 stars
   drinksRating    Int?     // 1-5 stars
   vibeRating      Int?     // 1-5 stars
+  serverRating    Int?     // 1-5 stars
   serviceSpeed    String?  // "Fast", "Moderate", "Slow"
   crowdLevel      String?  // "Busy", "Moderate", "Empty"
   serverName      String?  // Name or "Unknown"
