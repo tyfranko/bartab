@@ -160,7 +160,7 @@ export default function PaymentPage({ params }: { params: { tabId: string } }) {
             onClick={handlePay}
             disabled={isProcessing || !selectedMethod}
           >
-            {isProcessing ? 'Processing...' : `Pay ${formatCurrency(total)}`}
+            {isProcessing ? 'Processing Payment...' : `PAY TAB ${formatCurrency(total)}`}
           </Button>
         </div>
       </div>

@@ -1,67 +1,56 @@
-import { prisma } from '@/lib/prisma'
-import { notFound, redirect } from 'next/navigation'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { formatCurrency, formatTime } from '@/lib/utils'
 
-async function getTab(tabId: string, userId: string) {
-  const tab = await prisma.tab.findFirst({
-    where: {
-      id: tabId,
-      userId,
-    },
-    include: {
-      venue: true,
-      table: true,
-      orders: {
-        include: {
-          items: {
-            include: {
-              menuItem: true,
-            },
-          },
-        },
-        orderBy: {
-          orderedAt: 'desc',
-        },
-      },
-    },
-  })
+export default function CloseTabPage({ params }: { params: { tabId: string } }) {
+  const router = useRouter()
+  const [selectedTip, setSelectedTip] = useState(18)
+  const [customTip, setCustomTip] = useState('')
+  const [showCustomInput, setShowCustomInput] = useState(false)
 
-  return tab
-}
-
-export default async function CloseTabPage({ params }: { params: { tabId: string } }) {
-  const session = await getServerSession(authOptions)
-  
-  if (!session?.user?.email) {
-    redirect('/signin')
+  // Mock data - in real app, fetch from API
+  const tab = {
+    id: params.tabId,
+    venue: { name: 'The Red Door Saloon', taxRate: 0.0925 },
+    openedAt: new Date(),
+    subtotal: 85.50,
+    items: [
+      { id: '1', menuItem: { name: 'Jack Daniel\'s Tennessee Whiskey' }, quantity: 2, price: 9.00, orderedAt: new Date(Date.now() - 3600000) },
+      { id: '2', menuItem: { name: 'Buffalo Trace Bourbon' }, quantity: 1, price: 10.00, orderedAt: new Date(Date.now() - 3000000) },
+      { id: '3', menuItem: { name: 'Nashville Hot Wings' }, quantity: 1, price: 14.00, orderedAt: new Date(Date.now() - 2400000) },
+      { id: '4', menuItem: { name: 'Craft IPA' }, quantity: 3, price: 8.50, orderedAt: new Date(Date.now() - 1800000) },
+      { id: '5', menuItem: { name: 'Loaded Nachos' }, quantity: 2, price: 12.00, orderedAt: new Date(Date.now() - 900000) },
+    ],
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-  })
+  const tax = tab.subtotal * tab.venue.taxRate
+  const tipAmount = showCustomInput && customTip 
+    ? parseFloat(customTip) || 0 
+    : (tab.subtotal * selectedTip) / 100
+  const total = tab.subtotal + tax + tipAmount
 
-  if (!user) {
-    redirect('/signin')
+  const handleTipSelect = (percent: number) => {
+    setSelectedTip(percent)
+    setShowCustomInput(false)
+    setCustomTip('')
   }
 
-  const tab = await getTab(params.tabId, user.id)
-
-  if (!tab) {
-    notFound()
+  const handleCustomTip = () => {
+    setShowCustomInput(true)
+    setSelectedTip(0)
   }
 
-  const allOrderItems = tab.orders.flatMap(order => 
-    order.items.map(item => ({
-      ...item,
-      orderedAt: order.orderedAt,
-    }))
-  )
+  const handleNextStep = () => {
+    router.push(`/tab/${params.tabId}/payment?tip=${tipAmount}&total=${total}`)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-32">
@@ -89,38 +78,30 @@ export default async function CloseTabPage({ params }: { params: { tabId: string
         {/* All Items Ordered */}
         <div className="mb-6">
           <h2 className="mb-3 text-lg font-semibold">Items Ordered</h2>
-          {allOrderItems.length === 0 ? (
-            <Card>
-              <CardContent className="py-8 text-center text-gray-600">
-                No items ordered
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-2">
-              {allOrderItems.map((item) => (
-                <Card key={item.id}>
-                  <CardContent className="p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{item.quantity}x</span>
-                          <span>{item.menuItem.name}</span>
-                        </div>
-                        <span className="text-xs text-gray-500">
-                          {formatTime(item.orderedAt)}
-                        </span>
+          <div className="space-y-2">
+            {tab.items.map((item) => (
+              <Card key={item.id}>
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{item.quantity}x</span>
+                        <span>{item.menuItem.name}</span>
                       </div>
-                      <span className="font-semibold">{formatCurrency(item.price * item.quantity)}</span>
+                      <span className="text-xs text-gray-500">
+                        {formatTime(item.orderedAt)}
+                      </span>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+                    <span className="font-semibold">{formatCurrency(item.price * item.quantity)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
 
         {/* Bill Summary */}
-        <Card>
+        <Card className="mb-6">
           <CardHeader>
             <CardTitle>Your Tab</CardTitle>
           </CardHeader>
@@ -131,31 +112,83 @@ export default async function CloseTabPage({ params }: { params: { tabId: string
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Tax ({(tab.venue.taxRate * 100).toFixed(1)}%)</span>
-              <span>{formatCurrency(tab.tax)}</span>
+              <span>{formatCurrency(tax)}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Suggested Tip (18%)</span>
-              <span>{formatCurrency(tab.subtotal * 0.18)}</span>
+            <div className="flex justify-between text-sm font-semibold">
+              <span className="text-gray-600">Tip</span>
+              <span>{formatCurrency(tipAmount)}</span>
             </div>
             <div className="border-t pt-3 flex justify-between font-bold text-xl">
               <span>Total</span>
-              <span>{formatCurrency(tab.total)}</span>
+              <span>{formatCurrency(total)}</span>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Add Tip Section */}
+        <Card className="mb-24">
+          <CardHeader>
+            <CardTitle>Add Tip</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              {[10, 15, 18, 20].map((percent) => (
+                <button
+                  key={percent}
+                  onClick={() => handleTipSelect(percent)}
+                  className={`rounded-lg border-2 py-4 font-semibold transition-colors ${
+                    selectedTip === percent && !showCustomInput
+                      ? 'border-black bg-black text-white'
+                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                  }`}
+                >
+                  {percent}%
+                  <div className="text-sm font-normal mt-1">
+                    {formatCurrency((tab.subtotal * percent) / 100)}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={handleCustomTip}
+              className={`w-full rounded-lg border-2 py-4 font-semibold transition-colors ${
+                showCustomInput
+                  ? 'border-black bg-black text-white'
+                  : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+              }`}
+            >
+              Custom Amount
+            </button>
+
+            {showCustomInput && (
+              <div className="space-y-2">
+                <Label htmlFor="customTip">Enter Custom Tip Amount</Label>
+                <Input
+                  id="customTip"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={customTip}
+                  onChange={(e) => setCustomTip(e.target.value)}
+                  className="text-lg"
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Pay Button - Fixed Bottom */}
+      {/* Next Step Button - Fixed Bottom */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-lg">
-        <div className="container mx-auto max-w-md space-y-2">
-          <Link href={`/tab/${tab.id}/payment`}>
-            <Button className="w-full" size="lg">
-              Pay Tab {formatCurrency(tab.total)}
-            </Button>
-          </Link>
-          <p className="text-center text-xs text-gray-600">
-            You can adjust tip on the next screen
-          </p>
+        <div className="container mx-auto max-w-md">
+          <Button 
+            className="w-full" 
+            size="lg"
+            onClick={handleNextStep}
+          >
+            Next Step → {formatCurrency(total)}
+          </Button>
         </div>
       </div>
     </div>

@@ -126,30 +126,6 @@ export default async function NotificationsPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Default Tip</CardTitle>
-            <CardDescription>Your preferred tip percentage</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2">
-              {[15, 18, 20, 25].map((percent) => (
-                <button
-                  key={percent}
-                  className={`flex-1 rounded-lg border-2 py-3 font-semibold transition-colors ${
-                    percent === preferences.defaultTipPercent
-                      ? 'border-black bg-black text-white'
-                      : 'border-gray-300 bg-white text-gray-700'
-                  }`}
-                  disabled
-                >
-                  {percent}%
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
         <div className="mt-6">
           <Button className="w-full" disabled>
             Save Preferences

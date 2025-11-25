@@ -19,7 +19,7 @@ export function AddToCartButton({ item }: AddToCartButtonProps) {
 
   const handleAdd = () => {
     setQuantity(q => q + 1)
-    // In a real app, this would update a cart context/state
+    // In a real app, this would update a tab context/state
   }
 
   const handleRemove = () => {
@@ -29,7 +29,7 @@ export function AddToCartButton({ item }: AddToCartButtonProps) {
   if (quantity === 0) {
     return (
       <Button size="sm" onClick={handleAdd}>
-        <Plus className="h-4 w-4" />
+        Add to Tab
       </Button>
     )
   }
