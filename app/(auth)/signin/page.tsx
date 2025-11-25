@@ -64,22 +64,6 @@ export default function SignInPage() {
         <CardDescription>Welcome back! Sign in to continue.</CardDescription>
       </CardHeader>
       <CardContent>
-        {/* Test Credentials Helper */}
-        <div className="mb-4 rounded-lg bg-blue-50 p-3 text-sm">
-          <p className="font-medium text-blue-900">🧪 Test Account</p>
-          <div className="mt-1 space-y-1 text-blue-800">
-            <p>Email: <code className="rounded bg-blue-100 px-1">test@bartab.com</code></p>
-            <p>Password: <code className="rounded bg-blue-100 px-1">password123</code></p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setFormData({ email: 'test@bartab.com', password: 'password123' })}
-            className="mt-2 text-xs text-blue-600 hover:text-blue-700 underline"
-          >
-            Click to autofill
-          </button>
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
