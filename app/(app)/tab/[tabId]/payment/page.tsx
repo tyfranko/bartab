@@ -152,7 +152,7 @@ export default function PaymentPage({ params }: { params: { tabId: string } }) {
       </div>
 
       {/* Pay Button - Fixed Bottom */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-lg">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-lg z-50">
         <div className="container mx-auto max-w-md">
           <Button 
             className="w-full" 

@@ -79,17 +79,22 @@ export default async function HomePage() {
       {activeTabs.length > 0 && (
         <Card className="mb-6 border-2 border-green-500 bg-green-50">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="font-semibold text-green-900">Active Tab Open</h2>
-                <p className="text-sm text-green-700">{activeTabs[0].venue.name}</p>
-                <p className="text-xs text-green-600">Running Total: {formatCurrency(activeTabs[0].total)}</p>
+            <div>
+              <h2 className="font-semibold text-green-900">Active Tab Open</h2>
+              <p className="text-sm text-green-700">{activeTabs[0].venue.name}</p>
+              <p className="text-xs text-green-600 mb-3">Running Total: {formatCurrency(activeTabs[0].total)}</p>
+              <div className="flex gap-2">
+                <Link href="/tab/active" className="flex-1">
+                  <Button variant="outline" className="w-full bg-white border-green-600 text-green-700 hover:bg-green-50">
+                    View Tab
+                  </Button>
+                </Link>
+                <Link href={`/tab/${activeTabs[0].id}/close`} className="flex-1">
+                  <Button className="w-full bg-red-600 hover:bg-red-700">
+                    CLOSE TAB
+                  </Button>
+                </Link>
               </div>
-              <Link href={`/tab/${activeTabs[0].id}/close`}>
-                <Button variant="default" className="bg-green-600 hover:bg-green-700">
-                  Close Tab
-                </Button>
-              </Link>
             </div>
           </CardContent>
         </Card>
