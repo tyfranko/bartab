@@ -13,6 +13,7 @@ type Tab = {
   id: string
   subtotal: number
   venue: {
+    id: string
     name: string
     taxRate: number
   }
