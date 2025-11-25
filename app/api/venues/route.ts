@@ -16,7 +16,7 @@ export async function GET(request: Request) {
       include: {
         ratings: {
           select: {
-            rating: true,
+            overallRating: true,
           },
         },
       },
@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     const venuesWithMetadata = filteredVenues.map((venue) => {
       const avgRating =
         venue.ratings.length > 0
-          ? venue.ratings.reduce((sum, r) => sum + r.rating, 0) / venue.ratings.length
+          ? venue.ratings.reduce((sum, r) => sum + r.overallRating, 0) / venue.ratings.length
           : 0
 
       const distance =
