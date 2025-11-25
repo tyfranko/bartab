@@ -70,7 +70,11 @@ export default async function MenuPage({ params }: { params: { venueId: string }
       {/* Menu Categories */}
       <div className="container mx-auto max-w-md px-4 py-6">
         <Tabs defaultValue={categories[0]?.id} className="w-full">
-          <TabsList className="w-full grid grid-cols-4 mb-6">
+          <TabsList className={`w-full grid mb-6 gap-1 ${
+            categories.length === 2 ? 'grid-cols-2' :
+            categories.length === 3 ? 'grid-cols-3' :
+            'grid-cols-4'
+          }`}>
             {categories.map((category) => (
               <TabsTrigger key={category.id} value={category.id} className="text-xs">
                 {category.name}
