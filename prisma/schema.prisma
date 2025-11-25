@@ -15,6 +15,8 @@ model User {
   lastName           String
   passwordHash       String?
   phone              String?
+  phoneVerified      Boolean         @default(false)
+  dateOfBirth        DateTime?
   profileImage       String?
   defaultTipPercent  Int             @default(18)
   pushNotifications  Boolean         @default(true)
@@ -328,4 +330,45 @@ enum NotificationType {
   PAYMENT_FAILED
   TAB_CLOSED
   PROMOTION
+}
+
+model VenueApplication {
+  id              String                @id @default(cuid())
+  businessName    String
+  managerName     String
+  email           String                @unique
+  phone           String
+  address         String
+  city            String
+  state           String
+  zipCode         String
+  posSystem       String
+  estimatedVolume String?
+  status          VenueApplicationStatus @default(PENDING)
+  notes           String?
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@map("venue_applications")
+}
+
+model PhoneVerification {
+  id              String   @id @default(cuid())
+  phone           String
+  code            String
+  expiresAt       DateTime
+  verified        Boolean  @default(false)
+  attempts        Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("phone_verifications")
+}
+
+enum VenueApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

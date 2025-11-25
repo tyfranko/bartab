@@ -150,11 +150,20 @@ export default function SignInPage() {
           </Button>
         </div>
 
-        <div className="mt-6 text-center text-sm">
-          <span className="text-gray-600">Don&apos;t have an account? </span>
-          <Link href="/signup" className="font-medium text-black hover:underline">
-            Sign up
-          </Link>
+        <div className="mt-6 text-center text-sm space-y-3">
+          <div>
+            <span className="text-gray-600">Don&apos;t have an account? </span>
+            <Link href="/auth/signup" className="font-medium text-black hover:underline">
+              Sign Up
+            </Link>
+          </div>
+          <div className="pt-3 border-t">
+            <Link href="/auth/venue-signup">
+              <Button variant="ghost" className="text-sm text-gray-600 hover:text-black w-full">
+                Join as a BarTab Venue →
+              </Button>
+            </Link>
+          </div>
         </div>
       </CardContent>
     </Card>
