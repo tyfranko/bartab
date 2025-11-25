@@ -60,9 +60,30 @@ export function MenuClient({ venue }: { venue: Venue }) {
     setIsSubmitting(true)
     
     try {
-      // TODO: Get or create active tab for this venue
-      // For now, we'll simulate success
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Prepare items for API
+      const orderItems = items.map(item => ({
+        menuItemId: item.id,
+        quantity: item.quantity,
+      }))
+
+      // Call API to create/get tab and add items
+      const response = await fetch('/api/tabs/add-items', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          venueId: venue.id,
+          items: orderItems,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to add items to tab')
+      }
+
+      const data = await response.json()
       
       toast({
         title: 'Added to Tab!',
@@ -76,7 +97,7 @@ export function MenuClient({ venue }: { venue: Venue }) {
       console.error('Error adding to tab:', error)
       toast({
         title: 'Error',
-        description: 'Failed to add items to tab. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to add items to tab. Please try again.',
         variant: 'destructive',
       })
     } finally {
