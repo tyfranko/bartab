@@ -2,9 +2,11 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
-import { Settings, QrCode, Clock, MapPin } from 'lucide-react'
+import Image from 'next/image'
+import { Settings, QrCode, Clock, MapPin, Receipt } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 async function getUserData(email: string) {
@@ -62,67 +64,100 @@ export default async function HomePage() {
 
   return (
     <div className="container mx-auto max-w-md px-4 py-6">
-      {/* Header */}
+      {/* Header with Logo */}
       <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Welcome back, {user?.firstName}!</h1>
-          <p className="text-sm text-gray-600">Ready to order?</p>
+        <Image
+          src="/images/bar-tab.png"
+          alt="BarTab Logo"
+          width={120}
+          height={40}
+          className="h-10 w-auto"
+        />
+        <div className="flex items-center gap-2">
+          {activeTabs.length > 0 && (
+            <Link href="/tab/active">
+              <Button variant="outline" size="sm" className="relative">
+                <Receipt className="h-4 w-4 mr-1" />
+                Active Tabs
+                <Badge className="ml-2 bg-green-600">{activeTabs.length}</Badge>
+              </Button>
+            </Link>
+          )}
+          <Link href="/settings">
+            <Button variant="ghost" size="icon">
+              <Settings className="h-5 w-5" />
+            </Button>
+          </Link>
         </div>
-        <Link href="/settings">
-          <Button variant="ghost" size="icon">
-            <Settings className="h-5 w-5" />
-          </Button>
-        </Link>
       </div>
 
-      {/* Active Tab Alert */}
-      {activeTabs.length > 0 && (
-        <Card className="mb-6 border-2 border-green-500 bg-green-50">
-          <CardContent className="p-4">
-            <div>
-              <h2 className="font-semibold text-green-900">Active Tab Open</h2>
-              <p className="text-sm text-green-700">{activeTabs[0].venue.name}</p>
-              <p className="text-xs text-green-600 mb-3">Running Total: {formatCurrency(activeTabs[0].total)}</p>
-              <div className="flex gap-2">
-                <Link href="/tab/active" className="flex-1">
-                  <Button variant="outline" className="w-full bg-white border-green-600 text-green-700 hover:bg-green-50">
-                    View Tab
-                  </Button>
-                </Link>
-                <Link href={`/tab/${activeTabs[0].id}/close`} className="flex-1">
-                  <Button className="w-full bg-red-600 hover:bg-red-700">
-                    CLOSE TAB
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Welcome Message */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Welcome back, {user?.firstName}!</h1>
+        <p className="text-sm text-gray-600">Ready to order?</p>
+      </div>
 
-      {/* Quick Actions - Bar or Table */}
-      {activeTabs.length === 0 && (
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <h2 className="mb-3 text-center text-sm font-semibold text-gray-600">Where are you?</h2>
-            <div className="grid grid-cols-2 gap-3">
-              <Link href="/bar-qr">
-                <Button size="lg" className="h-24 w-full flex-col gap-2 bg-black hover:bg-gray-800">
-                  <QrCode className="h-8 w-8" />
-                  <span>I&apos;m at The Bar</span>
+      {/* Quick Actions - Bar or Table (Always Visible) */}
+      <Card className="mb-6">
+        <CardContent className="p-4">
+          <h2 className="mb-3 text-center text-sm font-semibold text-gray-600">Start a New Tab</h2>
+          <div className="grid grid-cols-2 gap-3">
+            <Link href="/bar-qr">
+              <Button size="lg" className="h-24 w-full flex-col gap-2 bg-black hover:bg-gray-800">
+                <QrCode className="h-8 w-8" />
+                <span>I&apos;m at The Bar</span>
+              </Button>
+            </Link>
+            <Link href="/venues">
+              <Button size="lg" className="h-24 w-full flex-col gap-2 bg-black hover:bg-gray-800">
+                <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span>I&apos;m at a Table</span>
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Active Tabs */}
+      {activeTabs.length > 0 && (
+        <div className="mb-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Your Active Tabs</h2>
+            {activeTabs.length > 1 && (
+              <Link href="/tabs/close-all">
+                <Button size="sm" variant="outline" className="text-red-600 border-red-600 hover:bg-red-50">
+                  Close All
                 </Button>
               </Link>
-              <Link href="/venues">
-                <Button size="lg" className="h-24 w-full flex-col gap-2 bg-black hover:bg-gray-800">
-                  <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  <span>I&apos;m at a Table</span>
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+            )}
+          </div>
+          <div className="space-y-3">
+            {activeTabs.map((tab) => (
+              <Card key={tab.id} className="border-2 border-green-500 bg-green-50">
+                <CardContent className="p-4">
+                  <div>
+                    <h3 className="font-semibold text-green-900">{tab.venue.name}</h3>
+                    <p className="text-sm text-green-700 mb-3">Running Total: {formatCurrency(tab.total)}</p>
+                    <div className="flex gap-2">
+                      <Link href="/tab/active" className="flex-1">
+                        <Button variant="outline" className="w-full bg-white border-green-600 text-green-700 hover:bg-green-50">
+                          View Tab
+                        </Button>
+                      </Link>
+                      <Link href={`/tab/${tab.id}/close`} className="flex-1">
+                        <Button className="w-full bg-red-600 hover:bg-red-700">
+                          CLOSE TAB
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Nearby Venues */}
