@@ -3,33 +3,103 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { formatCurrency, formatTime } from '@/lib/utils'
+import { useToast } from '@/components/ui/use-toast'
+
+type TabItem = {
+  id: string
+  quantity: number
+  price: number
+  menuItem: {
+    name: string
+  }
+}
+
+type Order = {
+  id: string
+  orderedAt: Date
+  items: TabItem[]
+}
+
+type Tab = {
+  id: string
+  openedAt: Date
+  subtotal: number
+  venue: {
+    name: string
+    taxRate: number
+  }
+  orders: Order[]
+}
 
 export default function CloseTabPage({ params }: { params: { tabId: string } }) {
   const router = useRouter()
+  const { toast } = useToast()
+  const [tab, setTab] = useState<Tab | null>(null)
+  const [loading, setLoading] = useState(true)
   const [selectedTip, setSelectedTip] = useState(18)
   const [customTip, setCustomTip] = useState('')
   const [showCustomInput, setShowCustomInput] = useState(false)
 
-  // Mock data - in real app, fetch from API
-  const tab = {
-    id: params.tabId,
-    venue: { name: 'The Red Door Saloon', taxRate: 0.0925 },
-    openedAt: new Date(),
-    subtotal: 85.50,
-    items: [
-      { id: '1', menuItem: { name: 'Jack Daniel\'s Tennessee Whiskey' }, quantity: 2, price: 9.00, orderedAt: new Date(Date.now() - 3600000) },
-      { id: '2', menuItem: { name: 'Buffalo Trace Bourbon' }, quantity: 1, price: 10.00, orderedAt: new Date(Date.now() - 3000000) },
-      { id: '3', menuItem: { name: 'Nashville Hot Wings' }, quantity: 1, price: 14.00, orderedAt: new Date(Date.now() - 2400000) },
-      { id: '4', menuItem: { name: 'Craft IPA' }, quantity: 3, price: 8.50, orderedAt: new Date(Date.now() - 1800000) },
-      { id: '5', menuItem: { name: 'Loaded Nachos' }, quantity: 2, price: 12.00, orderedAt: new Date(Date.now() - 900000) },
-    ],
+  useEffect(() => {
+    fetchTab()
+  }, [params.tabId])
+
+  const fetchTab = async () => {
+    try {
+      const response = await fetch(`/api/tabs/${params.tabId}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch tab')
+      }
+
+      const data = await response.json()
+      setTab(data.tab)
+    } catch (error) {
+      console.error('Error fetching tab:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load tab details. Please try again.',
+        variant: 'destructive',
+      })
+      router.push('/home')
+    } finally {
+      setLoading(false)
+    }
   }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
+  }
+
+  if (!tab) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">Tab not found</p>
+          <Link href="/home">
+            <Button>Go Home</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  // Flatten all order items
+  const allItems = tab.orders.flatMap(order => 
+    order.items.map(item => ({
+      ...item,
+      orderedAt: order.orderedAt,
+    }))
+  )
 
   const tax = tab.subtotal * tab.venue.taxRate
   const tipAmount = showCustomInput && customTip 
@@ -49,7 +119,7 @@ export default function CloseTabPage({ params }: { params: { tabId: string } }) 
   }
 
   const handleNextStep = () => {
-    router.push(`/tab/${params.tabId}/payment?tip=${tipAmount}&total=${total}`)
+    router.push(`/tab/${params.tabId}/payment?tip=${tipAmount.toFixed(2)}&total=${total.toFixed(2)}`)
   }
 
   return (
@@ -57,7 +127,7 @@ export default function CloseTabPage({ params }: { params: { tabId: string } }) 
       <div className="container mx-auto max-w-md px-4 py-6">
         {/* Header */}
         <div className="mb-6 flex items-center">
-          <Link href="/home">
+          <Link href="/tab/active">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -70,7 +140,7 @@ export default function CloseTabPage({ params }: { params: { tabId: string } }) 
           <CardContent className="p-4">
             <h2 className="text-lg font-semibold">{tab.venue.name}</h2>
             <p className="text-sm text-gray-600">
-              Opened at {formatTime(tab.openedAt)}
+              Opened at {formatTime(new Date(tab.openedAt))}
             </p>
           </CardContent>
         </Card>
@@ -79,7 +149,7 @@ export default function CloseTabPage({ params }: { params: { tabId: string } }) 
         <div className="mb-6">
           <h2 className="mb-3 text-lg font-semibold">Items Ordered</h2>
           <div className="space-y-2">
-            {tab.items.map((item) => (
+            {allItems.map((item) => (
               <Card key={item.id}>
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between">
@@ -89,7 +159,7 @@ export default function CloseTabPage({ params }: { params: { tabId: string } }) 
                         <span>{item.menuItem.name}</span>
                       </div>
                       <span className="text-xs text-gray-500">
-                        {formatTime(item.orderedAt)}
+                        {formatTime(new Date(item.orderedAt))}
                       </span>
                     </div>
                     <span className="font-semibold">{formatCurrency(item.price * item.quantity)}</span>
@@ -194,4 +264,3 @@ export default function CloseTabPage({ params }: { params: { tabId: string } }) 
     </div>
   )
 }
-

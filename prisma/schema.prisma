@@ -1,5 +1,3 @@
-// schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,36 +7,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ==================== USER MANAGEMENT ====================
-
 model User {
-  id                String    @id @default(cuid())
-  email             String    @unique
-  emailVerified     DateTime?
-  firstName         String
-  lastName          String
-  passwordHash      String?
-  phone             String?
-  profileImage      String?
-  
-  // OAuth
-  accounts          Account[]
-  sessions          Session[]
-  
-  // App Data
-  tabs              Tab[]
-  paymentMethods    PaymentMethod[]
-  notifications     Notification[]
-  ratings           Rating[]
-  
-  // Preferences
-  defaultTipPercent Int       @default(18)
-  pushNotifications Boolean   @default(true)
-  emailNotifications Boolean  @default(true)
-  
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  id                 String          @id @default(cuid())
+  email              String          @unique
+  emailVerified      DateTime?
+  firstName          String
+  lastName           String
+  passwordHash       String?
+  phone              String?
+  profileImage       String?
+  defaultTipPercent  Int             @default(18)
+  pushNotifications  Boolean         @default(true)
+  emailNotifications Boolean         @default(true)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  accounts           Account[]
+  notifications      Notification[]
+  paymentMethods     PaymentMethod[]
+  ratings            Rating[]
+  sessions           Session[]
+  tabs               Tab[]
+
   @@map("users")
 }
 
@@ -55,8 +44,7 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@map("accounts")
@@ -68,7 +56,7 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@map("sessions")
 }
 
@@ -81,154 +69,227 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
-// ==================== VENUES ====================
-
 model Venue {
-  id              String   @id @default(cuid())
-  name            String
-  address         String
-  city            String
-  state           String
-  zipCode         String
-  phone           String
-  email           String
-  
-  // Location
-  latitude        Float
-  longitude       Float
-  
-  // Business Info
-  merchantId      String   @unique
-  taxRate         Float    @default(0.08)
-  
-  // Features
-  logo            String?
-  coverImage      String?
-  description     String?
-  
-  // Operating Hours
-  openingHours    Json     // { monday: { open: "11:00", close: "23:00" }, ... }
-  
-  // Relationships
-  tables          Table[]
-  menuCategories  MenuCategory[]
-  tabs            Tab[]
-  ratings         Rating[]
-  
-  // Status
-  isActive        Boolean  @default(true)
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  id             String         @id @default(cuid())
+  name           String
+  address        String
+  city           String
+  state          String
+  zipCode        String
+  phone          String
+  email          String
+  latitude       Float
+  longitude      Float
+  merchantId     String         @unique
+  taxRate        Float          @default(0.08)
+  logo           String?
+  coverImage     String?
+  description    String?
+  openingHours   Json
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  menuCategories MenuCategory[]
+  ratings        Rating[]
+  tables         Table[]
+  tabs           Tab[]
+
   @@map("venues")
 }
 
 model Table {
-  id              String   @id @default(cuid())
-  venueId         String
-  tableNumber     String
-  qrCode          String   @unique // Encoded: bartab://venue/{venueId}/table/{tableNumber}
-  capacity        Int
-  
-  // Relationships
-  venue           Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  tabs            Tab[]
-  
-  isActive        Boolean  @default(true)
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  id          String   @id @default(cuid())
+  venueId     String
+  tableNumber String
+  qrCode      String   @unique
+  capacity    Int
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  venue       Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  tabs        Tab[]
+
   @@unique([venueId, tableNumber])
   @@map("tables")
 }
 
-// ==================== MENU ====================
-
 model MenuCategory {
-  id              String     @id @default(cuid())
-  venueId         String
-  name            String     // Drinks, Starters, Mains, Desserts
-  description     String?
-  sortOrder       Int        @default(0)
-  
-  // Relationships
-  venue           Venue      @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  items           MenuItem[]
-  
-  isActive        Boolean    @default(true)
-  
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-  
+  id          String     @id @default(cuid())
+  venueId     String
+  name        String
+  description String?
+  sortOrder   Int        @default(0)
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  venue       Venue      @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  items       MenuItem[]
+
   @@map("menu_categories")
 }
 
 model MenuItem {
-  id              String       @id @default(cuid())
-  categoryId      String
-  name            String
-  description     String
-  price           Float
-  image           String?
-  
-  // Details
-  allergens       String[]     // ["dairy", "gluten", "nuts"]
-  isVegetarian    Boolean      @default(false)
-  isVegan         Boolean      @default(false)
-  isGlutenFree    Boolean      @default(false)
-  
-  // Availability
-  isAvailable     Boolean      @default(true)
-  availableDays   String[]     // ["monday", "tuesday", ...]
-  availableHours  Json?        // { start: "17:00", end: "22:00" }
-  
-  // Relationships
-  category        MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  orderItems      OrderItem[]
-  
-  sortOrder       Int          @default(0)
-  
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  
+  id             String       @id @default(cuid())
+  categoryId     String
+  name           String
+  description    String
+  price          Float
+  image          String?
+  allergens      String[]
+  isVegetarian   Boolean      @default(false)
+  isVegan        Boolean      @default(false)
+  isGlutenFree   Boolean      @default(false)
+  isAvailable    Boolean      @default(true)
+  availableDays  String[]
+  availableHours Json?
+  sortOrder      Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  category       MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orderItems     OrderItem[]
+
   @@map("menu_items")
 }
 
-// ==================== TABS & ORDERS ====================
-
 model Tab {
-  id              String     @id @default(cuid())
-  userId          String
-  venueId         String
-  tableId         String
-  
-  // Status
-  status          TabStatus  @default(OPEN)
-  
-  // Financial
-  subtotal        Float      @default(0)
-  tax             Float      @default(0)
-  tip             Float      @default(0)
-  total           Float      @default(0)
-  
-  // Timing
-  openedAt        DateTime   @default(now())
-  closedAt        DateTime?
-  
-  // Relationships
-  user            User       @relation(fields: [userId], references: [id])
-  venue           Venue      @relation(fields: [venueId], references: [id])
-  table           Table      @relation(fields: [tableId], references: [id])
-  orders          Order[]
-  splits          TabSplit[]
-  payment         Payment?
-  
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-  
+  id        String     @id @default(cuid())
+  userId    String
+  venueId   String
+  tableId   String
+  status    TabStatus  @default(OPEN)
+  subtotal  Float      @default(0)
+  tax       Float      @default(0)
+  tip       Float      @default(0)
+  total     Float      @default(0)
+  openedAt  DateTime   @default(now())
+  closedAt  DateTime?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  orders    Order[]
+  payment   Payment?
+  splits    TabSplit[]
+  table     Table      @relation(fields: [tableId], references: [id])
+  user      User       @relation(fields: [userId], references: [id])
+  venue     Venue      @relation(fields: [venueId], references: [id])
+
   @@map("tabs")
+}
+
+model Order {
+  id                  String      @id @default(cuid())
+  tabId               String
+  status              OrderStatus @default(PENDING)
+  orderedAt           DateTime    @default(now())
+  preparedAt          DateTime?
+  deliveredAt         DateTime?
+  specialInstructions String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  items               OrderItem[]
+  tab                 Tab         @relation(fields: [tabId], references: [id], onDelete: Cascade)
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  menuItemId String
+  quantity   Int      @default(1)
+  price      Float
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+model TabSplit {
+  id        String   @id @default(cuid())
+  tabId     String
+  userId    String?
+  guestName String?
+  amount    Float
+  tip       Float
+  total     Float
+  isPaid    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  payment   Payment?
+  tab       Tab      @relation(fields: [tabId], references: [id], onDelete: Cascade)
+
+  @@map("tab_splits")
+}
+
+model Payment {
+  id              String         @id @default(cuid())
+  tabId           String         @unique
+  tabSplitId      String?        @unique
+  userId          String
+  amount          Float
+  currency        String         @default("USD")
+  paymentMethodId String?
+  stripePaymentId String?        @unique
+  status          PaymentStatus  @default(PENDING)
+  receiptUrl      String?
+  failureReason   String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  tab             Tab            @relation(fields: [tabId], references: [id])
+  tabSplit        TabSplit?      @relation(fields: [tabSplitId], references: [id])
+
+  @@map("payments")
+}
+
+model PaymentMethod {
+  id                    String    @id @default(cuid())
+  userId                String
+  type                  String
+  brand                 String?
+  last4                 String
+  expiryMonth           Int?
+  expiryYear            Int?
+  stripePaymentMethodId String    @unique
+  isDefault             Boolean   @default(false)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments              Payment[]
+
+  @@map("payment_methods")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  userId    String
+  venueId   String
+  tabId     String?
+  rating    Int
+  review    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+  venue     Venue    @relation(fields: [venueId], references: [id])
+
+  @@map("ratings")
 }
 
 enum TabStatus {
@@ -237,115 +298,13 @@ enum TabStatus {
   CANCELLED
 }
 
-model Order {
-  id              String       @id @default(cuid())
-  tabId           String
-  
-  // Status
-  status          OrderStatus  @default(PENDING)
-  
-  // Items
-  items           OrderItem[]
-  
-  // Timing
-  orderedAt       DateTime     @default(now())
-  preparedAt      DateTime?
-  deliveredAt     DateTime?
-  
-  // Notes
-  specialInstructions String?
-  
-  // Relationships
-  tab             Tab          @relation(fields: [tabId], references: [id], onDelete: Cascade)
-  
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  
-  @@map("orders")
-}
-
 enum OrderStatus {
-  PENDING      // Just ordered
-  CONFIRMED    // Kitchen received
-  PREPARING    // Being made
-  READY        // Ready to serve
-  DELIVERED    // Delivered to table
-  CANCELLED    // Cancelled
-}
-
-model OrderItem {
-  id              String    @id @default(cuid())
-  orderId         String
-  menuItemId      String
-  
-  quantity        Int       @default(1)
-  price           Float     // Price at time of order
-  notes           String?
-  
-  // Relationships
-  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  menuItem        MenuItem  @relation(fields: [menuItemId], references: [id])
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
-  @@map("order_items")
-}
-
-// ==================== PAYMENTS ====================
-
-model TabSplit {
-  id              String   @id @default(cuid())
-  tabId           String
-  userId          String?  // null if guest
-  guestName       String?
-  
-  amount          Float
-  tip             Float
-  total           Float
-  
-  isPaid          Boolean  @default(false)
-  
-  // Relationships
-  tab             Tab      @relation(fields: [tabId], references: [id], onDelete: Cascade)
-  payment         Payment?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  @@map("tab_splits")
-}
-
-model Payment {
-  id                String        @id @default(cuid())
-  tabId             String        @unique
-  tabSplitId        String?       @unique
-  userId            String
-  
-  // Amount
-  amount            Float
-  currency          String        @default("USD")
-  
-  // Payment Method
-  paymentMethodId   String?
-  paymentMethod     PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
-  
-  // Provider Details
-  stripePaymentId   String?       @unique
-  status            PaymentStatus @default(PENDING)
-  
-  // Relationships
-  tab               Tab           @relation(fields: [tabId], references: [id])
-  tabSplit          TabSplit?     @relation(fields: [tabSplitId], references: [id])
-  
-  // Metadata
-  receiptUrl        String?
-  failureReason     String?
-  
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  
-  @@map("payments")
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
 }
 
 enum PaymentStatus {
@@ -356,55 +315,6 @@ enum PaymentStatus {
   REFUNDED
 }
 
-model PaymentMethod {
-  id              String    @id @default(cuid())
-  userId          String
-  
-  // Card Details
-  type            String    // "card", "apple_pay"
-  brand           String?   // "visa", "mastercard"
-  last4           String
-  expiryMonth     Int?
-  expiryYear      Int?
-  
-  // Stripe
-  stripePaymentMethodId String @unique
-  
-  // Settings
-  isDefault       Boolean   @default(false)
-  
-  // Relationships
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  payments        Payment[]
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
-  @@map("payment_methods")
-}
-
-// ==================== NOTIFICATIONS & RATINGS ====================
-
-model Notification {
-  id              String           @id @default(cuid())
-  userId          String
-  
-  type            NotificationType
-  title           String
-  message         String
-  data            Json?            // Additional data
-  
-  isRead          Boolean          @default(false)
-  readAt          DateTime?
-  
-  // Relationships
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  createdAt       DateTime         @default(now())
-  
-  @@map("notifications")
-}
-
 enum NotificationType {
   ORDER_CONFIRMED
   ORDER_READY
@@ -413,23 +323,3 @@ enum NotificationType {
   TAB_CLOSED
   PROMOTION
 }
-
-model Rating {
-  id              String   @id @default(cuid())
-  userId          String
-  venueId         String
-  tabId           String?
-  
-  rating          Int      // 1-5 stars
-  review          String?
-  
-  // Relationships
-  user            User     @relation(fields: [userId], references: [id])
-  venue           Venue    @relation(fields: [venueId], references: [id])
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  @@map("ratings")
-}
-

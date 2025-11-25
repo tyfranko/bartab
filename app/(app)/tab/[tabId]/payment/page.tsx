@@ -1,26 +1,68 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, CreditCard, ChevronRight } from 'lucide-react'
+import { ArrowLeft, CreditCard, ChevronRight, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/utils'
 import { useToast } from '@/components/ui/use-toast'
 
+type Tab = {
+  id: string
+  subtotal: number
+  venue: {
+    name: string
+    taxRate: number
+  }
+}
+
 export default function PaymentPage({ params }: { params: { tabId: string } }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
   const [isProcessing, setIsProcessing] = useState(false)
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null)
+  const [tab, setTab] = useState<Tab | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  // Mock data - in a real app, fetch from API
-  const total = 45.67
+  const tipFromUrl = searchParams.get('tip')
+  const totalFromUrl = searchParams.get('total')
+
+  const tip = tipFromUrl ? parseFloat(tipFromUrl) : 0
+  const total = totalFromUrl ? parseFloat(totalFromUrl) : 0
+
+  // Mock payment methods - in a real app, fetch from API
   const paymentMethods = [
     { id: '1', type: 'card', brand: 'Visa', last4: '4242', isDefault: true },
     { id: '2', type: 'card', brand: 'Mastercard', last4: '5555', isDefault: false },
   ]
+
+  useEffect(() => {
+    fetchTab()
+  }, [params.tabId])
+
+  const fetchTab = async () => {
+    try {
+      const response = await fetch(`/api/tabs/${params.tabId}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch tab')
+      }
+
+      const data = await response.json()
+      setTab(data.tab)
+    } catch (error) {
+      console.error('Error fetching tab:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load tab details.',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handlePay = async () => {
     if (!selectedMethod) {
@@ -34,15 +76,38 @@ export default function PaymentPage({ params }: { params: { tabId: string } }) {
 
     setIsProcessing(true)
 
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    try {
+      // Simulate payment processing
+      await new Promise(resolve => setTimeout(resolve, 2000))
 
-    toast({
-      title: 'Payment Successful!',
-      description: 'Your tab has been closed.',
-    })
+      // TODO: Call actual payment API
+      // const response = await fetch('/api/payments', { ... })
 
-    router.push('/payment/success')
+      toast({
+        title: 'Payment Successful!',
+        description: 'Your tab has been closed.',
+      })
+
+      // Redirect to success page with details
+      const venueName = encodeURIComponent(tab?.venue.name || 'Unknown Venue')
+      router.push(`/tab/${params.tabId}/success?total=${total}&venue=${venueName}`)
+    } catch (error) {
+      console.error('Payment error:', error)
+      toast({
+        title: 'Payment Failed',
+        description: 'There was an error processing your payment. Please try again.',
+        variant: 'destructive',
+      })
+      setIsProcessing(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
   }
 
   return (
@@ -57,6 +122,16 @@ export default function PaymentPage({ params }: { params: { tabId: string } }) {
           </Link>
           <h1 className="ml-4 text-2xl font-bold">Payment</h1>
         </div>
+
+        {/* Venue Name */}
+        {tab && (
+          <Card className="mb-4">
+            <CardContent className="p-4 text-center">
+              <p className="text-sm text-gray-600">Closing tab at</p>
+              <p className="text-lg font-semibold">{tab.venue.name}</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Amount */}
         <Card className="mb-6 bg-black text-white">
@@ -125,30 +200,32 @@ export default function PaymentPage({ params }: { params: { tabId: string } }) {
           </p>
         </div>
 
-        {/* Bill Details (Expandable) */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Bill Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Subtotal</span>
-              <span>{formatCurrency(38.50)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Tax</span>
-              <span>{formatCurrency(3.37)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Tip (18%)</span>
-              <span>{formatCurrency(3.80)}</span>
-            </div>
-            <div className="border-t pt-2 flex justify-between font-semibold">
-              <span>Total</span>
-              <span>{formatCurrency(total)}</span>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Bill Details */}
+        {tab && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Bill Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Subtotal</span>
+                <span>{formatCurrency(tab.subtotal)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Tax ({(tab.venue.taxRate * 100).toFixed(1)}%)</span>
+                <span>{formatCurrency(tab.subtotal * tab.venue.taxRate)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Tip</span>
+                <span>{formatCurrency(tip)}</span>
+              </div>
+              <div className="border-t pt-2 flex justify-between font-semibold">
+                <span>Total</span>
+                <span>{formatCurrency(total)}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Pay Button - Fixed Bottom */}

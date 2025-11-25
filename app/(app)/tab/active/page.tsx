@@ -1,76 +1,129 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Trash2 } from 'lucide-react'
+import { ArrowLeft, Trash2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatCurrency, formatTime } from '@/lib/utils'
+import { useToast } from '@/components/ui/use-toast'
+
+type TabItem = {
+  id: string
+  quantity: number
+  price: number
+  menuItem: {
+    name: string
+    description: string | null
+  }
+}
+
+type Order = {
+  id: string
+  orderedAt: Date
+  items: TabItem[]
+}
+
+type Tab = {
+  id: string
+  openedAt: Date
+  subtotal: number
+  venue: {
+    id: string
+    name: string
+    address: string
+    city: string
+    state: string
+    taxRate: number
+  }
+  table: {
+    tableNumber: string
+  } | null
+  orders: Order[]
+}
 
 export default function ActiveTabPage() {
   const router = useRouter()
+  const { toast } = useToast()
+  const [tab, setTab] = useState<Tab | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  // Mock data - in real app, fetch from API based on user's active tab
-  const tab = {
-    id: 'tab_123',
-    venue: { 
-      name: 'The Red Door Saloon',
-      address: '1816 Division St, Nashville, TN'
-    },
-    tableNumber: 'T7',
-    openedAt: new Date(Date.now() - 5400000), // 1.5 hours ago
-    items: [
-      { 
-        id: '1', 
-        name: 'Jack Daniel\'s Tennessee Whiskey', 
-        quantity: 2, 
-        price: 9.00, 
-        orderedAt: new Date(Date.now() - 5400000) 
-      },
-      { 
-        id: '2', 
-        name: 'Buffalo Trace Bourbon', 
-        quantity: 1, 
-        price: 10.00, 
-        orderedAt: new Date(Date.now() - 4800000) 
-      },
-      { 
-        id: '3', 
-        name: 'Nashville Hot Wings', 
-        quantity: 1, 
-        price: 14.00, 
-        orderedAt: new Date(Date.now() - 3600000) 
-      },
-      { 
-        id: '4', 
-        name: 'Craft IPA', 
-        quantity: 3, 
-        price: 8.50, 
-        orderedAt: new Date(Date.now() - 2400000) 
-      },
-      { 
-        id: '5', 
-        name: 'Old Fashioned', 
-        quantity: 1, 
-        price: 12.00, 
-        orderedAt: new Date(Date.now() - 1200000) 
-      },
-    ],
+  useEffect(() => {
+    fetchActiveTab()
+  }, [])
+
+  const fetchActiveTab = async () => {
+    try {
+      const response = await fetch('/api/tabs/active')
+      if (!response.ok) {
+        if (response.status === 404) {
+          toast({
+            title: 'No Active Tab',
+            description: 'You don\'t have an active tab. Start one at a venue!',
+            variant: 'destructive',
+          })
+          router.push('/home')
+          return
+        }
+        throw new Error('Failed to fetch tab')
+      }
+
+      const data = await response.json()
+      setTab(data.tab)
+    } catch (error) {
+      console.error('Error fetching active tab:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load your tab. Please try again.',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const subtotal = tab.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-  const taxRate = 0.0925
+  const handleRemoveItem = async (itemId: string) => {
+    toast({
+      title: 'Coming Soon',
+      description: 'Item removal will be available soon!',
+    })
+    // TODO: Implement remove item API call
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
+  }
+
+  if (!tab) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">No active tab found</p>
+          <Link href="/home">
+            <Button>Go Home</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  // Flatten all order items
+  const allItems = tab.orders.flatMap(order => 
+    order.items.map(item => ({
+      ...item,
+      orderedAt: order.orderedAt,
+    }))
+  )
+
+  const subtotal = tab.subtotal
+  const taxRate = tab.venue.taxRate
   const tax = subtotal * taxRate
   const currentTotal = subtotal + tax
-
-  const handleRemoveItem = (itemId: string) => {
-    // In real app, call API to remove item from tab
-    console.log('Remove item:', itemId)
-  }
-
-  const handleCloseTab = () => {
-    router.push(`/tab/${tab.id}/close`)
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-32">
@@ -96,11 +149,11 @@ export default function ActiveTabPage() {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-gray-600">Table</p>
-                <p className="font-semibold">{tab.tableNumber}</p>
+                <p className="font-semibold">{tab.table?.tableNumber || 'Bar'}</p>
               </div>
               <div>
                 <p className="text-gray-600">Opened</p>
-                <p className="font-semibold">{formatTime(tab.openedAt)}</p>
+                <p className="font-semibold">{formatTime(new Date(tab.openedAt))}</p>
               </div>
             </div>
           </CardContent>
@@ -109,7 +162,7 @@ export default function ActiveTabPage() {
         {/* Items on Tab */}
         <div className="mb-6">
           <h2 className="mb-3 text-lg font-semibold">Items on Tab</h2>
-          {tab.items.length === 0 ? (
+          {allItems.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center text-gray-600">
                 <p className="text-lg">No items yet</p>
@@ -118,7 +171,7 @@ export default function ActiveTabPage() {
             </Card>
           ) : (
             <div className="space-y-2">
-              {tab.items.map((item) => (
+              {allItems.map((item) => (
                 <Card key={item.id}>
                   <CardContent className="p-3">
                     <div className="flex items-start justify-between">
@@ -126,9 +179,9 @@ export default function ActiveTabPage() {
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-lg">{item.quantity}x</span>
                           <div>
-                            <p className="font-medium">{item.name}</p>
+                            <p className="font-medium">{item.menuItem.name}</p>
                             <p className="text-xs text-gray-500">
-                              Added {formatTime(item.orderedAt)}
+                              Added {formatTime(new Date(item.orderedAt))}
                             </p>
                           </div>
                         </div>
@@ -176,7 +229,7 @@ export default function ActiveTabPage() {
         </Card>
 
         {/* Add More Items */}
-        <Link href={`/menu/${tab.venue.name}`}>
+        <Link href={`/menu/${tab.venue.id}`}>
           <Button variant="outline" className="w-full mb-4">
             Add More Items
           </Button>
@@ -189,7 +242,7 @@ export default function ActiveTabPage() {
           <Button 
             className="w-full bg-red-600 hover:bg-red-700 text-white" 
             size="lg"
-            onClick={handleCloseTab}
+            onClick={() => router.push(`/tab/${tab.id}/close`)}
           >
             CLOSE TAB
           </Button>
@@ -201,4 +254,3 @@ export default function ActiveTabPage() {
     </div>
   )
 }
-
